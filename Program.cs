@@ -138,7 +138,7 @@ namespace VultuBot
                 if (message.Stickers.First().FormatType == StickerFormat.PNG)
                     return message.Stickers.First().StickerUrl;
 
-            if (message.Content.StartsWith("https://media.discordapp.net/attachments/") && message.Content.Contains(".gif?"))
+            if ((message.Content.StartsWith("https://media.discordapp.net/attachments/") && message.Content.Contains(".gif?")))
                 return message.Content;
 
             return string.Empty;
@@ -166,7 +166,9 @@ namespace VultuBot
                     return;
                 }
 
-                var reactions = message.Reactions.Where(x => emoji.Id == 0 && emoji.GetDiscordName() == ":star:").First();
+                
+               
+                var reactions = message.Reactions.Where(x => x.Emoji.Id == 0 && x.Emoji.GetDiscordName() == ":star:").First();
 #if DEBUG_DEV
                 if (reactions.Count >= 1)
 #else
