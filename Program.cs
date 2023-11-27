@@ -123,6 +123,27 @@ namespace VultuBot
         }
 
 
+
+        static string GetImageForStarboard(DiscordMessage message)
+        {
+            if (message is null)
+                return string.Empty;
+
+            if (message.Attachments.Count > 0)
+                foreach (var attachment in message.Attachments)
+                    if (attachment.MediaType.StartsWith("image/"))
+                        return attachment.Url;
+
+            if (message.Stickers.Count > 0)
+                if (message.Stickers.First().FormatType == StickerFormat.PNG)
+                    return message.Stickers.First().StickerUrl;
+
+            if (message.Content.StartsWith("https://media.discordapp.net/attachments/") && message.Content.Contains(".gif?"))
+                return message.Content;
+
+            return string.Empty;
+        }
+
         static void ProcessStarboardMessage(DiscordMessage message, DiscordEmoji emoji, DiscordGuild guild)
         {
             if (message.Author.IsBot)
@@ -152,44 +173,20 @@ namespace VultuBot
                 if (reactions.Count >= Starboard.StarboardThreshold)
 #endif
                 {
-                    var imageURL = string.Empty;
-                   
-                    if (message.Attachments.Count > 0)
-                    {
-                        foreach (var attachment in message.Attachments)
-                        {
-                            if (attachment.MediaType.StartsWith("image/"))
-                            {
-                                Console.WriteLine($"{attachment.MediaType}");
-                                imageURL = attachment.Url;
-                                break;
-                            }
-
-                        }
-                    }
-
-
-                    
-                    // Kind of a band-aid fix, but it will do for now.
-                    if (message.Content.StartsWith("https://media.discordapp.net/attachments/") && message.Content.Contains(".gif?"))
-                        imageURL = message.Content;
-
-
-                    if (imageURL == string.Empty && message.Stickers.Count > 0)
-                    {
-                        if (message.Stickers.First().FormatType == StickerFormat.PNG)
-                            imageURL = message.Stickers.First().StickerUrl;
-                    }
-
                     var content = (message.Content.Length > 0 ? message.Content : string.Empty);
+                    var refMessage = message.ReferencedMessage;
+                    var starboard_image = GetImageForStarboard(message);
+                    var ref_starboard_image = GetImageForStarboard(refMessage);
 
 
-                    if (message.ReferencedMessage is not null)
+                    if (refMessage is not null)
                     {
-                        if (!string.IsNullOrWhiteSpace(message.ReferencedMessage.Content))
-                            content += $"\n(in response to \"{message.ReferencedMessage.Content}\")";
-
+                        if (!string.IsNullOrWhiteSpace(refMessage.Content))
+                            content += $"\n(in response to \"{refMessage.Content}\")";
+                        else if (ref_starboard_image != string.Empty)
+                            content += $"\n(in response to image)";
                     }
+
 
                     DiscordEmbedBuilder builder = new DiscordEmbedBuilder()
                     {
@@ -206,7 +203,11 @@ namespace VultuBot
                         },
                         Description = $"{content}" +
                                       $"\n\n[Click Here to Jump To Message](https://discord.com/channels/{guild.Id}/{message.ChannelId}/{message.Id})",
-                        ImageUrl = imageURL
+                        Thumbnail = new EmbedThumbnail()
+                        {
+                            Url = ref_starboard_image,
+                        },
+                        ImageUrl = starboard_image
                     };
 
 
