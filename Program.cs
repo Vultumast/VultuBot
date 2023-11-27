@@ -187,7 +187,7 @@ namespace VultuBot
                     if (message.ReferencedMessage is not null)
                     {
                         if (!string.IsNullOrWhiteSpace(message.ReferencedMessage.Content))
-                            content += $"\n(in response to {message.ReferencedMessage.Content})";
+                            content += $"\n(in response to \"{message.ReferencedMessage.Content}\")";
 
                     }
 
