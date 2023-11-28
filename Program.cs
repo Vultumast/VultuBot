@@ -149,92 +149,91 @@ namespace VultuBot
             if (message.Author.IsBot)
                 return;
 
-            if (emoji.Id == 0 && emoji.GetDiscordName() == ":star:") // Is it Discord Star?
+            if (!(emoji.Id == 0 && emoji.GetDiscordName() == ":star:")) // Is it Discord Star?
+                return;
+
+
+            //Console.WriteLine("discord star detected!");
+            var starboardID = Starboard.GetStarboardID(message.Id);
+            var starboardChannel = guild.GetChannel(StarboardChannelID);
+
+            if (message.Reactions.Count == 0)
             {
-
-                //Console.WriteLine("discord star detected!");
-                var starboardID = Starboard.GetStarboardID(message.Id);
-                var starboardChannel = guild.GetChannel(StarboardChannelID);
-
-                if (message.Reactions.Count == 0)
+                if (starboardID != 0)
                 {
-                    if (starboardID != 0)
-                    {
-                        starboardChannel.DeleteMessageAsync(starboardChannel.GetMessageAsync(Starboard.GetStarboardID(message.Id)).Result);
-                        Starboard.Remove(message.Id);
-                    }
-                    return;
+                    starboardChannel.DeleteMessageAsync(starboardChannel.GetMessageAsync(Starboard.GetStarboardID(message.Id)).Result);
+                    Starboard.Remove(message.Id);
+                }
+                return;
+            }
+
+            var reactions = message.Reactions.Where(x => x.Emoji.Id == 0 && x.Emoji.GetDiscordName() == ":star:").First();
+#if DEBUG_DEV
+            if (reactions.Count >= 1)
+#else
+            if (reactions.Count >= Starboard.StarboardThreshold)
+#endif
+            {
+                var content = (message.Content.Length > 0 ? message.Content : string.Empty);
+                var refMessage = message.ReferencedMessage;
+                var starboard_image = GetImageForStarboard(message);
+                var ref_starboard_image = GetImageForStarboard(refMessage);
+
+
+                if (refMessage is not null)
+                {
+                    if (!string.IsNullOrWhiteSpace(refMessage.Content))
+                        content += $"\n(in response to \"{refMessage.Content}\")";
+                    else if (ref_starboard_image != string.Empty)
+                        content += $"\n(in response to image)";
                 }
 
-                
-               
-                var reactions = message.Reactions.Where(x => x.Emoji.Id == 0 && x.Emoji.GetDiscordName() == ":star:").First();
-#if DEBUG_DEV
-                if (reactions.Count >= 1)
-#else
-                if (reactions.Count >= Starboard.StarboardThreshold)
-#endif
+
+                DiscordEmbedBuilder builder = new DiscordEmbedBuilder()
                 {
-                    var content = (message.Content.Length > 0 ? message.Content : string.Empty);
-                    var refMessage = message.ReferencedMessage;
-                    var starboard_image = GetImageForStarboard(message);
-                    var ref_starboard_image = GetImageForStarboard(refMessage);
-
-
-                    if (refMessage is not null)
+                    Color = new DiscordColor(0xFF, 0xAC, 0x33),
+                    Footer = new EmbedFooter()
                     {
-                        if (!string.IsNullOrWhiteSpace(refMessage.Content))
-                            content += $"\n(in response to \"{refMessage.Content}\")";
-                        else if (ref_starboard_image != string.Empty)
-                            content += $"\n(in response to image)";
-                    }
-
-
-                    DiscordEmbedBuilder builder = new DiscordEmbedBuilder()
+                        IconUrl = "https://cdn.discordapp.com/emojis/1178395966076882975.webp?size=96&quality=lossless",
+                        Text = $"Stars: {reactions.Count}",
+                    },
+                    Author = new EmbedAuthor()
                     {
-                        Color = new DiscordColor(0xFF, 0xAC, 0x33),
-                        Footer = new EmbedFooter()
-                        {
-                            IconUrl = "https://cdn.discordapp.com/emojis/1178395966076882975.webp?size=96&quality=lossless",
-                            Text = $"Stars: {reactions.Count}",
-                        },
-                        Author = new EmbedAuthor()
-                        {
-                            IconUrl = message.Author.AvatarUrl,
-                            Name = message.Author.Username
-                        },
-                        Description = $"{content}" +
-                                      $"\n\n[Click Here to Jump To Message](https://discord.com/channels/{guild.Id}/{message.ChannelId}/{message.Id})",
-                        Thumbnail = new EmbedThumbnail()
-                        {
-                            Url = ref_starboard_image,
-                        },
-                        ImageUrl = starboard_image
-                    };
-
-
-                    if (starboardID == 0)
+                        IconUrl = message.Author.AvatarUrl,
+                        Name = message.Author.Username
+                    },
+                    Description = $"{content}" +
+                                  $"\n\n[Click Here to Jump To Message](https://discord.com/channels/{guild.Id}/{message.ChannelId}/{message.Id})",
+                    Thumbnail = new EmbedThumbnail()
                     {
-                        var id = starboardChannel.SendMessageAsync(builder.Build()).Result.Id;
+                        Url = ref_starboard_image,
+                    },
+                    ImageUrl = starboard_image
+                };
 
-                        Starboard.Add(message.Id, id);
-                    }
-                    else
-                    {
-                        starboardChannel.GetMessageAsync(Starboard.GetStarboardID(message.Id)).Result.ModifyAsync(builder.Build());
-                    }
+
+                if (starboardID == 0)
+                {
+                    var id = starboardChannel.SendMessageAsync(builder.Build()).Result.Id;
+
+                    Starboard.Add(message.Id, id);
                 }
                 else
                 {
-                    if (starboardID != 0)
-                    {
-                        starboardChannel.DeleteMessageAsync(starboardChannel.GetMessageAsync(Starboard.GetStarboardID(message.Id)).Result);
-                        Starboard.Remove(message.Id);
-                    }
-
+                    starboardChannel.GetMessageAsync(Starboard.GetStarboardID(message.Id)).Result.ModifyAsync(builder.Build());
                 }
             }
+            else
+            {
+                if (starboardID != 0)
+                {
+                    starboardChannel.DeleteMessageAsync(starboardChannel.GetMessageAsync(Starboard.GetStarboardID(message.Id)).Result);
+                    Starboard.Remove(message.Id);
+                }
+
+            }
         }
+        
 
         #region Reactions
         private static Task Discord_MessageReactionsCleared(DiscordClient sender, DSharpPlus.EventArgs.MessageReactionsClearEventArgs e)
