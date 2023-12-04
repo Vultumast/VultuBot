@@ -108,7 +108,6 @@ namespace VultuBot
 #if DEBUG___DEV
             commands.RegisterCommands<DebugCommands>();
 #endif
-            //commands.RegisterCommands<PlusShackCommands>();
 
             discord.Ready += Discord_Ready;
             discord.MessageCreated += Discord_MessageCreated;
@@ -123,6 +122,8 @@ namespace VultuBot
         }
 
 
+
+        #region Attachments for Starboard
 
         static string GetImageForStarboard(DiscordMessage message)
         {
@@ -144,6 +145,21 @@ namespace VultuBot
             return string.Empty;
         }
 
+        static string GetVideoForStarboard(DiscordMessage message)
+        {
+            if (message is null)
+                return string.Empty;
+
+            if (message.Attachments.Count > 0)
+                foreach (var attachment in message.Attachments)
+                    if (attachment.MediaType.StartsWith("video/"))
+                        return attachment.Url;
+
+
+            return string.Empty;
+        }
+
+        #endregion
         static void ProcessStarboardMessage(DiscordMessage message, DiscordEmoji emoji, DiscordGuild guild)
         {
             if (message.Author.IsBot)
@@ -176,9 +192,13 @@ namespace VultuBot
             {
                 var content = (message.Content.Length > 0 ? message.Content : string.Empty);
                 var refMessage = message.ReferencedMessage;
+
+
                 var starboard_image = GetImageForStarboard(message);
                 var ref_starboard_image = GetImageForStarboard(refMessage);
 
+                var starboard_video = GetVideoForStarboard(message);
+                var ref_starboard_video = GetVideoForStarboard(message);
 
                 if (refMessage is not null)
                 {
@@ -186,6 +206,9 @@ namespace VultuBot
                         content += $"\n(in response to \"{refMessage.Content}\")";
                     else if (ref_starboard_image != string.Empty)
                         content += $"\n(in response to image)";
+
+                    if (!string.IsNullOrWhiteSpace(ref_starboard_video))
+                        content += $"\n[Click Here for Original Video]({ref_starboard_video})\n";
                 }
 
 
@@ -202,7 +225,7 @@ namespace VultuBot
                         IconUrl = message.Author.AvatarUrl,
                         Name = message.Author.Username
                     },
-                    Description = $"{content}" +
+                    Description = $"{content}{(starboard_video == string.Empty ? string.Empty : $"[Click Here for Video]({starboard_video})")}" +
                                   $"\n\n[Click Here to Jump To Message](https://discord.com/channels/{guild.Id}/{message.ChannelId}/{message.Id})",
                     Thumbnail = new EmbedThumbnail()
                     {
@@ -215,7 +238,6 @@ namespace VultuBot
                 if (starboardID == 0)
                 {
                     var id = starboardChannel.SendMessageAsync(builder.Build()).Result.Id;
-
                     Starboard.Add(message.Id, id);
                 }
                 else
@@ -355,7 +377,7 @@ namespace VultuBot
             {
                 if (!e.Data.Contains("[CONSOLE]"))
                 {
-                    if (e.Data.Contains("<"))
+                    if (e.Data.Contains("[INFO] <"))
                         minecraftChannel.SendMessageAsync($"{e.Data.Substring(e.Data.IndexOf('<'))}");
                     else if (e.Data.Contains("logged in"))
                     {
