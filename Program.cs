@@ -30,8 +30,8 @@ namespace VultuBot
 
 
 
-        const ulong ServerID = 1153122535299362876;
-        const ulong MinecraftChannelID = 1174825407409815683;
+        public const ulong ServerID = 1153122535299362876;
+        public const ulong MinecraftChannelID = 1174825407409815683;
 
 #if DEBUG_DEV
         const ulong StarboardChannelID = 1178377434702286978;
@@ -55,8 +55,7 @@ namespace VultuBot
         public static string Token;
 
 
-        static DiscordClient discord = null!;
-        static Process process = new Process();
+        public static DiscordClient DiscordClient = null!;
         static async Task Main(string[] args)
         {
             Console.WriteLine("Hello, World!");
@@ -74,7 +73,7 @@ namespace VultuBot
 
             Starboard.Read();
 
-            discord = new DiscordClient(new DiscordConfiguration()
+            DiscordClient = new DiscordClient(new DiscordConfiguration()
             {
                 Token = Token,
                 TokenType = TokenType.Bot,
@@ -84,7 +83,7 @@ namespace VultuBot
 
 
             string[] prefixes = new string[] { "!" };
-            var commands = discord.UseCommandsNext(new CommandsNextConfiguration()
+            var commands = DiscordClient.UseCommandsNext(new CommandsNextConfiguration()
             {
                 StringPrefixes = prefixes,
                 //CaseSensitive = false,
@@ -92,9 +91,9 @@ namespace VultuBot
                 //EnableDms = true,
                 EnableMentionPrefix = true,
             });
-            var slash = discord.UseSlashCommands();
+            var slash = DiscordClient.UseSlashCommands();
 
-            discord.UseInteractivity();
+            DiscordClient.UseInteractivity();
 
             //RunExternalExe();
             //process.ErrorDataReceived += Process_OutputDataReceived;
@@ -109,15 +108,15 @@ namespace VultuBot
             commands.RegisterCommands<DebugCommands>();
 #endif
 
-            discord.Ready += Discord_Ready;
-            discord.MessageCreated += Discord_MessageCreated;
-            discord.ComponentInteractionCreated += Discord_ComponentInteractionCreated;
-            discord.MessageReactionAdded += Discord_MessageReactionAdded;
-            discord.MessageReactionRemoved += Discord_MessageReactionRemoved;
-            discord.MessageReactionRemovedEmoji += Discord_MessageReactionRemovedEmoji;
-            discord.MessageReactionsCleared += Discord_MessageReactionsCleared;
+            DiscordClient.Ready += Discord_Ready;
+            DiscordClient.MessageCreated += MinecraftServer.Discord_MessageCreated;
+            DiscordClient.ComponentInteractionCreated += Discord_ComponentInteractionCreated;
+            DiscordClient.MessageReactionAdded += Discord_MessageReactionAdded;
+            DiscordClient.MessageReactionRemoved += Discord_MessageReactionRemoved;
+            DiscordClient.MessageReactionRemovedEmoji += Discord_MessageReactionRemovedEmoji;
+            DiscordClient.MessageReactionsCleared += Discord_MessageReactionsCleared;
 
-            await discord.ConnectAsync();
+            await DiscordClient.ConnectAsync();
             await Task.Delay(-1);
         }
 
@@ -336,95 +335,9 @@ namespace VultuBot
             return Task.CompletedTask;
         }
 
-        static StreamWriter serverInput = null;
-
-        public static async Task RunExternalExe()
-        {
-            process.StartInfo.FileName = "C:\\Program Files\\Java\\jdk-17\\bin\\java.exe";
-            process.StartInfo.Arguments = "-Xmx8096M -Xms8096M -jar server.jar nogui";
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.RedirectStandardOutput = true;
-            process.EnableRaisingEvents = true;
-            process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.RedirectStandardInput = true;
-
-            process.OutputDataReceived += Process_OutputDataReceived;
-            process.ErrorDataReceived += Process_OutputDataReceived;
-            process.Start();
-            serverInput = process.StandardInput;
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
-        }
-        static DiscordClient client = null!;
-        static DiscordGuild minecraftGuild = null!;
-        static DiscordChannel minecraftChannel = null!;
-        private static void Process_OutputDataReceived(object sender, DataReceivedEventArgs e)
-        {
-#if DEBUG_DEV
-
-#else
-            Console.WriteLine($"[MC SERVER] {e?.Data}");
-            if (client is null)
-                return;
-
-            if (minecraftGuild is null)
-                minecraftGuild = client.GetGuildAsync(ServerID).Result;
-            if (minecraftChannel is null)
-                minecraftChannel = minecraftGuild.GetChannel(MinecraftChannelID);
-
-            if (e is not null && e?.Data is not null)
-            {
-                if (!e.Data.Contains("[CONSOLE]"))
-                {
-                    if (e.Data.Contains("[INFO] <"))
-                        minecraftChannel.SendMessageAsync($"{e.Data.Substring(e.Data.IndexOf('<'))}");
-                    else if (e.Data.Contains("logged in"))
-                    {
-                        var offset = e.Data.IndexOf("[INFO]") + "INFO".Length + 2;
-                        minecraftChannel.SendMessageAsync($"{e.Data.Substring(offset, (e.Data.LastIndexOf('[')  - 1) - offset)} has joined the game.");
-                    }
-                    else if (e.Data.Contains("lost connection"))
-                    {
-                        var offset = e.Data.IndexOf("[INFO]") + "INFO".Length + 2;
-                        var message = $"{e.Data.Substring(offset, ((e.Data.IndexOf("lost connection") - 1) - offset))} has left the game.";
-
-                        if (message.Trim().First() != '/' && !Regex.IsMatch(message.Trim(), @"((([0-9]{1,3})(\.|\s)){4})"))
-                            minecraftChannel.SendMessageAsync(message);
-                    }
-                }
-            }
-#endif
-        }
-
-        private static Task Discord_MessageCreated(DiscordClient sender, DSharpPlus.EventArgs.MessageCreateEventArgs args)
-        {
-            if (serverInput is null)
-                return Task.CompletedTask;
-            if (args.Author.Id == sender.CurrentUser.Id)
-                return Task.CompletedTask;
-            if (args.Channel.Id != MinecraftChannelID)
-                return Task.CompletedTask;
-
-            var displayName = args.Message.Author.Username;
-
-            if (args.Message.Stickers.Count != 0)
-            {
-                serverInput.WriteLine($"say {args.Message.Author.Username} sent a sticker: {args.Message.Stickers[0].Name}");
-                serverInput.Flush();
-            }
-            if (!string.IsNullOrWhiteSpace(args.Message.Content))
-            {
-                //serverInput.WriteLine($"say <{args.Message.Author.Username}> {args.Message.Content}");
-                serverInput.WriteLine($"/tellraw @a [\"\",{{\"text\":\"<{args.Message.Author.Username}> {args.Message.Content}\",\"color\":\"gray\"}},\"\",\"\"]");
-                serverInput.Flush();
-            }
-            return Task.CompletedTask;
-        }
-
         private static Task Discord_Ready(DiscordClient sender, DSharpPlus.EventArgs.ReadyEventArgs args)
         {
-            client = sender;
-            RunExternalExe();
+            MinecraftServer.Init();
             Console.WriteLine("READY!");
             return Task.CompletedTask;
         }
