@@ -155,7 +155,6 @@ namespace VultuBot
                     if (attachment.MediaType.StartsWith("video/"))
                         return attachment.Url;
 
-
             return string.Empty;
         }
 
@@ -198,7 +197,7 @@ namespace VultuBot
                 var ref_starboard_image = GetImageForStarboard(refMessage);
 
                 var starboard_video = GetVideoForStarboard(message);
-                var ref_starboard_video = GetVideoForStarboard(message);
+                var ref_starboard_video = GetVideoForStarboard(refMessage);
 
                 if (refMessage is not null)
                 {
@@ -207,8 +206,8 @@ namespace VultuBot
                     else if (ref_starboard_image != string.Empty)
                         content += $"\n(in response to image)";
 
-                    if (!string.IsNullOrWhiteSpace(ref_starboard_video))
-                        content += $"\n[Click Here for Original Video]({ref_starboard_video})\n";
+                    if (ref_starboard_video != string.Empty)
+                        content += $"\n[Click Here for Original Video]({ref_starboard_video})";
                 }
 
 
@@ -225,7 +224,7 @@ namespace VultuBot
                         IconUrl = message.Author.AvatarUrl,
                         Name = message.Author.Username
                     },
-                    Description = $"{content}{(starboard_video == string.Empty ? string.Empty : $"[Click Here for Video]({starboard_video})")}" +
+                    Description = $"{content}{(starboard_video == string.Empty ? string.Empty : $"\n[Click Here for Video]({starboard_video})")}" +
                                   $"\n\n[Click Here to Jump To Message](https://discord.com/channels/{guild.Id}/{message.ChannelId}/{message.Id})",
                     Thumbnail = new EmbedThumbnail()
                     {
@@ -341,7 +340,7 @@ namespace VultuBot
 
         public static async Task RunExternalExe()
         {
-            process.StartInfo.FileName = "C:\\Program Files\\Java\\jre-1.8\\bin\\java.exe";
+            process.StartInfo.FileName = "C:\\Program Files\\Java\\jdk-17\\bin\\java.exe";
             process.StartInfo.Arguments = "-Xmx8096M -Xms8096M -jar server.jar nogui";
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardOutput = true;
@@ -415,7 +414,8 @@ namespace VultuBot
             }
             if (!string.IsNullOrWhiteSpace(args.Message.Content))
             {
-                serverInput.WriteLine($"say <{args.Message.Author.Username}> {args.Message.Content}");
+                //serverInput.WriteLine($"say <{args.Message.Author.Username}> {args.Message.Content}");
+                serverInput.WriteLine($"/tellraw @a [\"\",{{\"text\":\"<{args.Message.Author.Username}> {args.Message.Content}\",\"color\":\"gray\"}},\"\",\"\"]");
                 serverInput.Flush();
             }
             return Task.CompletedTask;
