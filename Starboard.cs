@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DSharpPlus.Entities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,6 +12,23 @@ namespace VultuBot
         private Dictionary<ulong, ulong> _messages = new Dictionary<ulong, ulong>();
 
         public const uint StarboardThreshold = 3;
+
+
+        public static bool IsEmoteStarboardEmote(DiscordEmoji emoji)
+        {
+            if (emoji is null)
+                return false;
+            if (emoji.Id == 1178051440367915008) // :yeah:
+                return true;
+            if (emoji.Id == 1163903968322265149) // :theyreright:
+                return true;
+            if (emoji.Id == 1182430478834348113) // :rt2:
+                return true;
+            if (emoji.Id == 0 && emoji.GetDiscordName() == ":star:")
+                return true;
+            
+            return true;
+        }
 
 #if DEBUG_DEV
         public const string StarboardFilepath = "Vultu/Dev/Starboard.bin";

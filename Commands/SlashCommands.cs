@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VultuBot
+namespace VultuBot.Commands
 {
     public class SlashCommands : ApplicationCommandModule
     {
@@ -47,15 +47,15 @@ namespace VultuBot
 
             await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Select your Roles").AddComponents(dropDown).AsEphemeral());
         }
-        /* [SlashCommand("kofi", "Support Radix")]
+        [SlashCommand("kofi", "Support Vultu")]
         public async Task KofiCommand(InteractionContext ctx)
         {
-            await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent($"Support RadixComet here: https://ko-fi.com/radixcomet"));
-        }*/
-        [SlashCommand("color", "Get a role color")]
+            await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent($"Support Vultu here: https://ko-fi.com/radixcomet"));
+        }
+        /* [SlashCommand("color", "Get a role color")]
         public async Task ColorCommand(InteractionContext ctx, [Option("ColorCode", "RGB888 Hexcode in format of 0xFFFFFF")] string hexcode)
         {
             await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent($"WIP"));
-        }
+        }*/
     }
 }
