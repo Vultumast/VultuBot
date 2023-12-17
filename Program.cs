@@ -23,6 +23,7 @@ using static DSharpPlus.Entities.DiscordEmbedBuilder;
 using System.Diagnostics.Metrics;
 using System.Net.Mail;
 using VultuBot.Commands;
+using VultuBot.Modules;
 
 namespace VultuBot
 {
@@ -48,7 +49,7 @@ namespace VultuBot
             public const ulong Fortnite = 1171071868212629504;
             public const ulong Minecraft = 1176422456613945395;
             public const ulong Movie_Night = 1178426137114849422;
-
+            public const ulong Lethal_Company = 1183883139886624890;
         }
 
 
@@ -73,6 +74,7 @@ namespace VultuBot
                 Directory.CreateDirectory("Vultu/Release");
 
             Starboard.Read();
+            Modules.AssignableRoles.Read();
 
             DiscordClient = new DiscordClient(new DiscordConfiguration()
             {
@@ -96,15 +98,8 @@ namespace VultuBot
 
             DiscordClient.UseInteractivity();
 
-            //RunExternalExe();
-            //process.ErrorDataReceived += Process_OutputDataReceived;
-            //commands.RegisterCommands<AdminCommands>();
-
-
-
-            //To register them globally, once you're confident that they're ready to be used by everyone
             slash.RegisterCommands<SlashCommands>();
-
+            slash.RegisterCommands<Commands.AssignableRoles>();
 #if DEBUG___DEV
             commands.RegisterCommands<DebugCommands>();
 #endif
@@ -166,8 +161,8 @@ namespace VultuBot
             if (message.Author.IsBot)
                 return;
 
-            //if (!(emoji.Id == 0 && emoji.GetDiscordName() == ":star:")) // Is it Discord Star?
-              //  return;
+            if (!(emoji.Id == 0 && emoji.GetDiscordName() == ":star:" || emoji.Id == 1178051440367915008 || emoji.Id == 1182430478834348113)) // Is it a Star?
+                return;
 
 
             //Console.WriteLine("discord star detected!");
@@ -187,7 +182,7 @@ namespace VultuBot
             var star_reactions = 0;
             var yeah_reactions = 0;
             var rt2_reactions = 0;
-            var theyreright_reactions = 0;
+
             for (int i = 0; i < message.Reactions.Count; i++)
             {
                 var reaction = message.Reactions[i];
@@ -201,14 +196,12 @@ namespace VultuBot
                 if (reaction.Emoji.Id == 1182430478834348113)
                     rt2_reactions = reaction.Count;
 
-                if (reaction.Emoji.Id == 1163903968322265149)
-                    theyreright_reactions = reaction.Count;
             }
 
 #if DEBUG_DEV
             if (star_reactions >= 1 || yeah_reactions >= 1 || rt2_reactions >= 1 || theyreright_reactions >= 1)
 #else
-            if (star_reactions >= Starboard.StarboardThreshold || yeah_reactions >= Starboard.StarboardThreshold || rt2_reactions >= Starboard.StarboardThreshold || theyreright_reactions >= Starboard.StarboardThreshold)
+            if (star_reactions >= Starboard.StarboardThreshold || yeah_reactions >= Starboard.StarboardThreshold || rt2_reactions >= Starboard.StarboardThreshold)
 #endif
             {
                 var content = (message.Content.Length > 0 ? message.Content : string.Empty);
@@ -236,8 +229,7 @@ namespace VultuBot
                 var reactions_text =
                     $"{(star_reactions > 0 ? $":star: {star_reactions}  " : string.Empty)}" +
                     $"{(yeah_reactions > 0 ? $"<:yeah:1178051440367915008> {yeah_reactions}  " : string.Empty)}" +
-                    $"{(rt2_reactions > 0 ? $"<:rt2:1182430478834348113> {rt2_reactions}  " : string.Empty)}" +
-                    $"{(theyreright_reactions > 0 ? $"<:theyreright:1163903968322265149> {theyreright_reactions}  " : string.Empty)}";
+                    $"{(rt2_reactions > 0 ? $"<:rt2:1182430478834348113> {rt2_reactions}  " : string.Empty)}";
 
 
                 DiscordEmbedBuilder builder = new DiscordEmbedBuilder()
@@ -251,7 +243,7 @@ namespace VultuBot
                     Footer = new EmbedFooter()
                     {
                         //IconUrl = "https://cdn.discordapp.com/emojis/1178395966076882975.webp?size=96&quality=lossless",
-                        Text = $"Total Reactions: {star_reactions + yeah_reactions + rt2_reactions + theyreright_reactions}",
+                        Text = $"Total Reactions: {star_reactions + yeah_reactions + rt2_reactions}",
                     },
 
                     Author = new EmbedAuthor()
@@ -323,10 +315,8 @@ namespace VultuBot
         {
             var message = e.Channel.GetMessageAsync(e.Message.Id).Result;
             if (Starboard.IsEmoteStarboardEmote(e.Emoji) && (e.User.Id == message.Author.Id) && (e.User.Id != 150745989836308480)) // Disable Self starring
-            {
-                e.Message.DeleteReactionAsync(e.Emoji, e.User);
-                return Task.CompletedTask;
-            } 
+                return e.Message.DeleteReactionAsync(e.Emoji, e.User);
+            
 
             ProcessStarboardMessage(message, e.Emoji, e.Guild);
             return Task.CompletedTask;
@@ -342,7 +332,7 @@ namespace VultuBot
                 case "roleDropDown":
                     if (e.Interaction.Data.Values is not null)
                     {
-                        if (e.Interaction.Data.Values.Contains("vc"))
+                        /*if (e.Interaction.Data.Values.Contains("vc"))
                             memberAuthor.GrantRoleAsync(e.Guild.Roles[RoleIDs.VC]);
                         else
                             memberAuthor.RevokeRoleAsync(e.Guild.Roles[RoleIDs.VC]);
@@ -361,9 +351,22 @@ namespace VultuBot
                             memberAuthor.GrantRoleAsync(e.Guild.Roles[RoleIDs.Movie_Night]);
                         else
                             memberAuthor.RevokeRoleAsync(e.Guild.Roles[RoleIDs.Movie_Night]);
+
+                        if (e.Interaction.Data.Values.Contains("lethal company"))
+                            memberAuthor.GrantRoleAsync(e.Guild.Roles[RoleIDs.Lethal_Company]);
+                        else
+                            memberAuthor.RevokeRoleAsync(e.Guild.Roles[RoleIDs.Lethal_Company]);*/
+
+                        foreach (var role in Modules.AssignableRoles.Roles)
+                        {
+                            if (e.Interaction.Data.Values.Contains(role.Key.ToString()))
+                                memberAuthor.GrantRoleAsync(e.Guild.Roles[role.Key]);
+                            else
+                                memberAuthor.RevokeRoleAsync(e.Guild.Roles[role.Key]);
+                        }
                     }
                     
-                    e.Interaction.CreateResponseAsync(InteractionResponseType.DeferredMessageUpdate);
+                    return e.Interaction.CreateResponseAsync(InteractionResponseType.DeferredMessageUpdate);
                     break;
             }
             return Task.CompletedTask;
@@ -372,7 +375,7 @@ namespace VultuBot
         private static Task Discord_Ready(DiscordClient sender, DSharpPlus.EventArgs.ReadyEventArgs args)
         {
             MinecraftServer.Init();
-            sender.UpdateStatusAsync(new DiscordActivity("Support Vultu!"), UserStatus.Online);
+            sender.UpdateStatusAsync(new DiscordActivity("Support my creator!"), UserStatus.Online);
             Console.WriteLine("READY!");
             return Task.CompletedTask;
         }

@@ -36,21 +36,29 @@ namespace VultuBot.Commands
         [SlashCommand("roles", "Toggle Roles")]
         public async Task RoleCommand(InteractionContext ctx)
         {
-            var dropDownOptions = new List<DiscordSelectComponentOption>()
+            /* var dropDownOptions = new List<DiscordSelectComponentOption>()
             {
                 new DiscordSelectComponentOption("VC Role", "vc", isDefault: ctx.Member.Roles.Contains(ctx.Guild.Roles[Program.RoleIDs.VC])),
                 new DiscordSelectComponentOption("Minecraft Role", "minecraft", isDefault: ctx.Member.Roles.Contains(ctx.Guild.Roles[Program.RoleIDs.Minecraft])),
                 new DiscordSelectComponentOption("Fortnite Role", "fortnite",isDefault: ctx.Member.Roles.Contains(ctx.Guild.Roles[Program.RoleIDs.Fortnite])),
                 new DiscordSelectComponentOption("Move Night Role", "movie night",isDefault: ctx.Member.Roles.Contains(ctx.Guild.Roles[Program.RoleIDs.Movie_Night])),
-            };
+                new DiscordSelectComponentOption("Lethal Company Role", "lethal company",isDefault: ctx.Member.Roles.Contains(ctx.Guild.Roles[Program.RoleIDs.Lethal_Company])),
+            };*/
+
+            var dropDownOptions = new List<DiscordSelectComponentOption>();
+
+            foreach (var item in Modules.AssignableRoles.Roles)
+                dropDownOptions.Add(new DiscordSelectComponentOption(item.Value, item.Key.ToString(), isDefault: ctx.Member.Roles.Contains(ctx.Guild.Roles[item.Key])));
+            
+
             var dropDown = new DiscordSelectComponent("roleDropDown", null, dropDownOptions, false, 0, dropDownOptions.Count);
 
             await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Select your Roles").AddComponents(dropDown).AsEphemeral());
         }
-        [SlashCommand("kofi", "Support Vultu")]
+        [SlashCommand("kofi", "Support my creator!")]
         public async Task KofiCommand(InteractionContext ctx)
         {
-            await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent($"Support Vultu here: https://ko-fi.com/radixcomet"));
+            await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent($"Support me here: https://ko-fi.com/radixcomet"));
         }
         /* [SlashCommand("color", "Get a role color")]
         public async Task ColorCommand(InteractionContext ctx, [Option("ColorCode", "RGB888 Hexcode in format of 0xFFFFFF")] string hexcode)
