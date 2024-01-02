@@ -28,6 +28,14 @@ namespace VultuBot.Commands
         }
         */
 
+        [SlashCommand("deployfop", "Deploy Fop")]
+        public async Task deployfopSlashCommand(InteractionContext ctx)
+        {
+            using (FileStream fs = new FileStream("Resources\\Videos\\deploying_fop.mov", FileMode.Open, FileAccess.Read))
+                await ctx.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent(string.Empty).AddFile(fs));
+            
+        }
+
         [SlashCommand("github", "Pulls the Github link")]
         public async Task GithubCommand(InteractionContext ctx)
         {

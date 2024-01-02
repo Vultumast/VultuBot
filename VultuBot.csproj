@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Configurations>Debug;Release;Debug_Dev</Configurations>
+	<GenerateRuntimeConfigDevFile>true</GenerateRuntimeConfigDevFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,6 +14,12 @@
     <PackageReference Include="DSharpPlus.CommandsNext" Version="4.4.3" />
     <PackageReference Include="DSharpPlus.Interactivity" Version="4.4.3" />
     <PackageReference Include="DSharpPlus.SlashCommands" Version="4.4.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Resources\Videos\deploying_fop.mov">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
